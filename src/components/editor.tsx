@@ -1,5 +1,5 @@
 import { createEffect, onCleanup, onMount, Show, For } from 'solid-js';
-import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
+import { editor as Monaco } from 'monaco-editor/esm/vs/editor/editor.api';
 
 type Option<T> = {
   name: string;
@@ -15,10 +15,10 @@ const Editor = function <T extends string | number>(props: {
   selectedOption?: T;
 }) {
   let editorContainer: HTMLDivElement;
-  let editor: monaco.editor.IStandaloneCodeEditor;
+  let editor: Monaco.IStandaloneCodeEditor;
 
   onMount(() => {
-    editor = monaco.editor.create(editorContainer, {
+    editor = Monaco.create(editorContainer, {
       value: props.value,
       language: props.lang,
       theme: 'vs-dark',
@@ -28,7 +28,16 @@ const Editor = function <T extends string | number>(props: {
       linkedEditing: true,
       tabSize: 2,
       insertSpaces: true,
-      fontLigatures: true
+      fontLigatures: true,
+      folding: false,
+      glyphMargin: false,
+      guides: {
+        bracketPairs: true
+      },
+      bracketPairColorization: {
+        enabled: true
+      },
+      overviewRulerBorder: false
     });
     editor.onDidChangeModelContent(_ => props.onChange(editor.getValue()));
   });
@@ -46,7 +55,7 @@ const Editor = function <T extends string | number>(props: {
   onCleanup(() => editor?.dispose());
 
   return (
-    <div class="h-full overflow-hidden">
+    <div class="h-full max-h-[calc(50vh_-_1.5rem)]">
       <Show when={props.options.length > 1} fallback={<div>{props.options[0].name}</div>}>
         <select class="w-full" onChange={e => props.onSelectChange?.(e.target.value.toString())}>
           <For each={props.options}>

@@ -10,19 +10,22 @@
   },
   "dependencies": {
     "@msgpack/msgpack": "3.0.0-beta2",
+    "@solid-primitives/scheduled": "^1.4.1",
     "brotli-compress": "^1.3.3",
+    "emmet-monaco-es": "^5.3.0",
     "esbuild-wasm": "^0.19.2",
     "js-base64": "^3.7.5",
     "monaco-editor": "^0.41.0",
+    "monaco-tailwindcss": "^0.6.0",
     "prettier": "^3.0.3",
-    "solid-js": "^1.7.8"
+    "solid-js": "^1.7.11"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.15",
     "postcss": "^8.4.29",
     "tailwindcss": "^3.3.3",
-    "typescript": "^5.0.2",
-    "vite": "^4.4.5",
+    "typescript": "^5.2.2",
+    "vite": "^4.4.9",
     "vite-plugin-solid": "^2.7.0"
   }
 }

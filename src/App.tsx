@@ -11,6 +11,7 @@ import { encode as encodeMsgPack, decode as decodeMsgPack } from '@msgpack/msgpa
 import { fromUint8Array as encodeBase64, toUint8Array as decodeBase64 } from 'js-base64';
 import { compress, decompress } from 'brotli-compress';
 import { isDev } from 'solid-js/web';
+import { debounce } from '@solid-primitives/scheduled';
 
 enum CSSAdditions {
   None,
@@ -43,7 +44,10 @@ const App = () => {
           e.stopPropagation();
           e.stopImmediatePropagation();
           const [html, css, js] = await Promise.all([
-            format(data.html, { parser: 'html', plugins: [prettierHTMLPlugin] }),
+            format(data.html, {
+              parser: 'html',
+              plugins: [prettierHTMLPlugin]
+            }),
             format(data.css, { parser: 'css', plugins: [prettierPostCSSPlugin] }),
             format(data.js, {
               parser: data.isTypeScript ? 'typescript' : 'babel',
@@ -51,6 +55,7 @@ const App = () => {
             })
           ]);
           setData({ html, css, js });
+          updateIframe(data);
           window.history.replaceState(
             null,
             '',
@@ -63,10 +68,37 @@ const App = () => {
 
   const [esbuildInitialized, setEsbuildInitialized] = createSignal(false);
 
-  const [transpiledJS, setTranspiledJS] = createSignal('');
+  const [iframeSrcDoc, setIframeSrcDoc] = createSignal('' as string);
+
+  const updateIframe = debounce(
+    async (data: Data) =>
+      setIframeSrcDoc(`<!DOCTYPE html>
+  <html lang="en" style="height:100%">
+    <head>
+      <meta charset="UTF-8" />
+      <title>Document</title>
+      ${
+        {
+          [CSSAdditions.None]: '',
+          [CSSAdditions.Tailwind]: '<script src="https://cdn.tailwindcss.com"></script>',
+          [CSSAdditions.Normalize]: '<link rel="stylesheet" href="/modern-normalize.min.css">'
+        }[data.cssAdditions]
+      }
+      <style>
+        ${data.css}
+      </style>
+    </head>
+    <body style="height:100%">
+      ${data.html}
+      <script>
+        ${data.isTypeScript ? await getTranspiledJS() : data.js}
+      </script>
+    </body>
+  </html>`),
+    250
+  );
 
   const getTranspiledJS = async () => {
-    if (!data.isTypeScript) return data.js;
     const result = await esbuild.transform(data.js, {
       loader: 'ts'
     });
@@ -75,8 +107,15 @@ const App = () => {
 
   createEffect(
     on(
-      [() => data.js, esbuildInitialized],
-      () => esbuildInitialized() && getTranspiledJS().then(setTranspiledJS)
+      [
+        () => data.css,
+        () => data.cssAdditions,
+        () => data.html,
+        () => data.isTypeScript,
+        () => data.js,
+        esbuildInitialized
+      ],
+      () => (!data.isTypeScript || esbuildInitialized()) && updateIframe(data)
     )
   );
 
@@ -129,33 +168,7 @@ const App = () => {
         />
       </div>
       <div>
-        <iframe
-          sandbox="allow-scripts"
-          srcdoc={`<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Document</title>
-    ${
-      {
-        [CSSAdditions.None]: '',
-        [CSSAdditions.Tailwind]: '<script src="https://cdn.tailwindcss.com"></script>',
-        [CSSAdditions.Normalize]: '<link rel="stylesheet" href="/modern-normalize.min.css">'
-      }[data.cssAdditions]
-    }
-    <style>
-      ${data.css}
-    </style>
-  </head>
-  <body>
-    ${data.html}
-    <script>
-      ${transpiledJS()}
-    </script>
-  </body>
-</html>`}
-          class="w-full h-full"
-        ></iframe>
+        <iframe sandbox="allow-scripts" srcdoc={iframeSrcDoc()} class="w-full h-full"></iframe>
       </div>
     </main>
   );

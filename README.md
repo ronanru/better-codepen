@@ -8,7 +8,9 @@
 
 - Familiar VSCode experience
 - Full TypeScript LSP integration (get in-editor errors and warnings)
-- TailwindCSS and Prettier support
+- TailwindCSS with LSP
+- Auto-formatting with Prettier
+- Built-in Emmet complition
 - Free and Open Source
 
 ### Roadmap
