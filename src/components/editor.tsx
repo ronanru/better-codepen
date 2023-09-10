@@ -1,5 +1,5 @@
-import { createEffect, onCleanup, onMount, Show, For } from 'solid-js';
 import { editor as Monaco } from 'monaco-editor/esm/vs/editor/editor.api';
+import { For, Show, createEffect, onCleanup, onMount } from 'solid-js';
 
 type Option<T> = {
   name: string;
@@ -13,6 +13,8 @@ const Editor = function <T extends string | number>(props: {
   onSelectChange?: (value: string) => void;
   options: Option<T>[];
   selectedOption?: T;
+  height: number;
+  width: number;
 }) {
   let editorContainer: HTMLDivElement;
   let editor: Monaco.IStandaloneCodeEditor;
@@ -23,7 +25,7 @@ const Editor = function <T extends string | number>(props: {
       language: props.lang,
       theme: 'vs-dark',
       minimap: {
-        enabled: false
+        enabled: false,
       },
       linkedEditing: true,
       tabSize: 2,
@@ -31,36 +33,49 @@ const Editor = function <T extends string | number>(props: {
       fontLigatures: true,
       folding: false,
       glyphMargin: false,
-      guides: {
-        bracketPairs: true
-      },
       bracketPairColorization: {
-        enabled: true
+        enabled: true,
       },
-      overviewRulerBorder: false
+      dimension: {
+        height: props.height,
+        width: props.width,
+      },
+      wordWrap: 'on',
+      showFoldingControls: 'never',
+      matchBrackets: 'always',
+      overviewRulerBorder: false,
+      overviewRulerLanes: 0,
+      lineNumbersMinChars: 2,
     });
-    editor.onDidChangeModelContent(_ => props.onChange(editor.getValue()));
+    editor.onDidChangeModelContent((_) => props.onChange(editor.getValue()));
   });
 
-  const onResize = () => editor?.layout();
-
-  onMount(() => window.addEventListener('resize', onResize));
-  onCleanup(() => window.removeEventListener('resize', onResize));
-
   createEffect(() => {
-    if (editor.getValue() === props.value) return;
-    editor?.setValue(props.value);
+    editor?.layout({
+      height: props.height,
+      width: props.width,
+    });
+    if (editor.getValue() !== props.value) editor?.setValue(props.value);
   });
 
   onCleanup(() => editor?.dispose());
 
   return (
-    <div class="h-full max-h-[calc(50vh_-_1.5rem)]">
-      <Show when={props.options.length > 1} fallback={<div>{props.options[0].name}</div>}>
-        <select class="w-full" onChange={e => props.onSelectChange?.(e.target.value.toString())}>
+    <div class="flex-1">
+      <Show
+        when={props.options.length > 1}
+        fallback={<div>{props.options[0].name}</div>}
+      >
+        <select
+          class="w-full"
+          onChange={(e) => props.onSelectChange?.(e.target.value.toString())}
+        >
           <For each={props.options}>
-            {option => (
-              <option selected={option.value === props.selectedOption} value={option.value}>
+            {(option) => (
+              <option
+                selected={option.value === props.selectedOption}
+                value={option.value}
+              >
                 {option.name}
               </option>
             )}
