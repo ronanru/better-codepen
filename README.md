@@ -15,6 +15,6 @@
 
 ### Roadmap
 
-- [ ] Window resizing
+- [x] Resizable panels
 - [ ] Support for multiple projects
 - [ ] Browser console viewer
