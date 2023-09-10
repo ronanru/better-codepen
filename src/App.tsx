@@ -42,6 +42,31 @@ const App = () => {
     isTypeScript: true,
   });
 
+  const save = async () => {
+    const [html, css, js] = await Promise.all([
+      format(data.html, {
+        parser: 'html',
+        plugins: [prettierHTMLPlugin],
+      }),
+      format(data.css, {
+        parser: 'css',
+        plugins: [prettierPostCSSPlugin],
+      }),
+      format(data.js, {
+        parser: data.isTypeScript ? 'typescript' : 'babel',
+        plugins: [prettierTSPlugin, prettierESTreePlugin],
+      }),
+    ]);
+    setData({ html, css, js });
+    updateIframe(data);
+    window.history.replaceState(
+      null,
+      '',
+      `?${encodeBase64(await compress(encodeMsgPack(data)))}`,
+    );
+    navigator.clipboard.writeText(location.href);
+  };
+
   const onKeyDown = async (e: KeyboardEvent) => {
     switch (e.key) {
       case 's':
@@ -49,28 +74,7 @@ const App = () => {
           e.preventDefault();
           e.stopPropagation();
           e.stopImmediatePropagation();
-          const [html, css, js] = await Promise.all([
-            format(data.html, {
-              parser: 'html',
-              plugins: [prettierHTMLPlugin],
-            }),
-            format(data.css, {
-              parser: 'css',
-              plugins: [prettierPostCSSPlugin],
-            }),
-            format(data.js, {
-              parser: data.isTypeScript ? 'typescript' : 'babel',
-              plugins: [prettierTSPlugin, prettierESTreePlugin],
-            }),
-          ]);
-          setData({ html, css, js });
-          updateIframe(data);
-          window.history.replaceState(
-            null,
-            '',
-            `?${encodeBase64(await compress(encodeMsgPack(data)))}`,
-          );
-          navigator.clipboard.writeText(location.href);
+          save();
         }
     }
   };
@@ -130,7 +134,7 @@ const App = () => {
         (!data.isTypeScript || isEsbuildInitialized()) && updateIframe(data),
     ),
   );
-  const [height, setHeight] = createSignal(window.innerHeight / 2 - 44);
+  const [height, setHeight] = createSignal(window.innerHeight / 2.5);
   const [width1, setWidth1] = createSignal(window.innerWidth / 3 - 10);
   const [width2, setWidth2] = createSignal(window.innerWidth / 3 - 10);
   const [resizing, setResizing] = createSignal<null | {
@@ -139,7 +143,7 @@ const App = () => {
   }>(null);
 
   const onResize = () => {
-    setHeight(window.innerHeight / 2 - 44);
+    setHeight(window.innerHeight / 2.5);
     setWidth1(window.innerWidth / 3 - 10);
     setWidth2(window.innerWidth / 3 - 10);
     setResizing(null);
@@ -186,19 +190,19 @@ const App = () => {
           break;
       }
       window.addEventListener('mousemove', onMouseMove);
-      window.addEventListener('mouseup', onMouseUp);
     }
   };
   const onMouseUp = (_: MouseEvent) => {
     setResizing(null);
     window.removeEventListener('mousemove', onMouseMove);
-    window.removeEventListener('mouseup', onMouseUp);
   };
 
   onMount(async () => {
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('mousedown', onMouseDown);
     window.addEventListener('resize', onResize);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('mouseout', onMouseUp);
     if (!isEsbuildInitialized())
       esbuild
         .initialize({
@@ -220,11 +224,33 @@ const App = () => {
     window.removeEventListener('mousedown', onMouseDown);
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('mouseup', onMouseUp);
+    window.removeEventListener('mouseout', onMouseUp);
     window.removeEventListener('resize', onResize);
   });
 
   return (
     <main class="flex h-screen w-screen flex-col">
+      <header class="flex items-center justify-between bg-gray-800 px-4 py-2 text-white">
+        <h1 class="text-lg font-bold">Better CodePen</h1>
+        <div class="space-x-4">
+          <a
+            href="https://github.com/ronanru/better-codepen"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            GitHub
+          </a>
+          <button
+            class="rounded-lg bg-gray-300 px-4 py-1 text-black"
+            onClick={() => {
+              save();
+              alert('Copied to clipboard!');
+            }}
+          >
+            Share
+          </button>
+        </div>
+      </header>
       <div class="flex">
         <Editor
           lang="html"

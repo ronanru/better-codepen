@@ -64,10 +64,14 @@ const Editor = function <T extends string | number>(props: {
     <div class="flex-1">
       <Show
         when={props.options.length > 1}
-        fallback={<div>{props.options[0].name}</div>}
+        fallback={
+          <div class="bg-gray-700 px-2 py-1 font-medium text-white">
+            {props.options[0].name}
+          </div>
+        }
       >
         <select
-          class="w-full"
+          class="w-full bg-gray-600 px-2 py-1.5 font-medium text-white"
           onChange={(e) => props.onSelectChange?.(e.target.value.toString())}
         >
           <For each={props.options}>
